@@ -1,0 +1,149 @@
+openapi: 3.0.3
+info:
+  title: Clueso local skeleton
+  version: 0.1.0
+  description: |
+    Independent prototype. Phase 1 only, synthetic data, localhost only.
+    No authentication, domain mutations, recording, or publishing is implemented.
+servers:
+  - url: http://localhost:18209
+paths:
+  /api/v1/system/check:
+    post:
+      operationId: checkSystem
+      summary: Validate a synthetic label and read migrated metadata
+      description: This diagnostic POST is read-only and never persists the label.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SystemCheckRequest"
+      responses:
+        "200":
+          description: The API can read the migrated metadata.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SystemCheckResponse"
+        "400":
+          description: Invalid, unknown-field, or malformed input.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "503":
+          description: The database or expected schema is unavailable.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /actuator/health/liveness:
+    get:
+      operationId: getLiveness
+      summary: Application process liveness, independent of the database
+      responses:
+        "200":
+          description: The process is live.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+            application/vnd.spring-boot.actuator.v3+json:
+              schema:
+                $ref: "#/components/schemas/Health"
+        "503":
+          description: The process is not live.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+            application/vnd.spring-boot.actuator.v3+json:
+              schema:
+                $ref: "#/components/schemas/Health"
+  /actuator/health/readiness:
+    get:
+      operationId: getReadiness
+      summary: Readiness including PostgreSQL and migrated metadata
+      responses:
+        "200":
+          description: The process, PostgreSQL, and schema are ready.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+            application/vnd.spring-boot.actuator.v3+json:
+              schema:
+                $ref: "#/components/schemas/Health"
+        "503":
+          description: A readiness dependency is unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+            application/vnd.spring-boot.actuator.v3+json:
+              schema:
+                $ref: "#/components/schemas/Health"
+components:
+  schemas:
+    SystemCheckRequest:
+      type: object
+      additionalProperties: false
+      required: [label]
+      properties:
+        label:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: "^(?=.*[A-Za-z0-9._-])[A-Za-z0-9._ -]+$"
+          example: synthetic-smoke
+    SystemCheckResponse:
+      type: object
+      additionalProperties: false
+      required: [service, status, label, schemaVersion]
+      properties:
+        service:
+          type: string
+          enum: [clueso-api]
+        status:
+          type: string
+          enum: [ready]
+        label:
+          type: string
+          minLength: 1
+          maxLength: 64
+        schemaVersion:
+          type: integer
+          enum: [1]
+    Health:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [UP, DOWN, OUT_OF_SERVICE, UNKNOWN]
+    Problem:
+      type: object
+      required: [type, title, status, detail, instance]
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+        errors:
+          type: array
+          items:
+            type: object
+            required: [field, message]
+            properties:
+              field:
+                type: string
+              message:
+                type: string

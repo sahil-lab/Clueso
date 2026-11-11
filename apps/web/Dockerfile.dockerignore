@@ -1,0 +1,10 @@
+*
+!apps/
+!apps/web/
+!apps/web/dist/
+!apps/web/dist/**
+!apps/web/Dockerfile
+!infra/
+!infra/docker/
+!infra/docker/nginx.conf
+!infra/docker/nginx-main.conf

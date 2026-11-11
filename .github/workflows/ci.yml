@@ -1,0 +1,32 @@
+name: Clueso skeleton
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: clueso-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify with isolated container tooling
+        shell: pwsh
+        run: ./scripts/clueso.ps1 -Action Verify
+      - name: Preserve verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: clueso-verification
+          path: .local/evidence/
+          if-no-files-found: warn

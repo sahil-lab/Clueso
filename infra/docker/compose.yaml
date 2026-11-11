@@ -1,0 +1,219 @@
+name: clueso
+
+services:
+  db:
+    image: postgres:17-alpine@sha256:3540c0362c809df084ffac0ae69fe794515f9de92692f02178bcdce0ef0302ac
+    environment:
+      POSTGRES_DB: clueso
+      POSTGRES_USER: clueso
+      POSTGRES_PASSWORD_FILE: /run/secrets/database_password
+    secrets:
+      - database_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    tmpfs:
+      - /var/run/postgresql:size=16m
+      - /tmp:size=16m
+    read_only: true
+    command: ["postgres", "-c", "shared_buffers=32MB", "-c", "max_connections=20"]
+    networks: [runtime]
+    cpus: 0.35
+    mem_limit: 192m
+    pids_limit: 128
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 15s
+    logging:
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  api:
+    image: clueso-api:phase1
+    build:
+      context: ../../services/api
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/clueso?connectTimeout=3&socketTimeout=5
+      DB_USER: clueso
+    secrets:
+      - source: database_password
+        target: spring.datasource.password
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:18209:8080"
+    networks: [runtime, edge]
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    cpus: 0.75
+    mem_limit: 384m
+    pids_limit: 128
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -q -O /dev/null http://127.0.0.1:8080/actuator/health/readiness",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 18
+      start_period: 45s
+    logging:
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  web:
+    image: clueso-web:phase1
+    build:
+      context: ../..
+      dockerfile: apps/web/Dockerfile
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:18109:8080"
+    networks: [runtime, edge]
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    cpus: 0.25
+    mem_limit: 64m
+    pids_limit: 64
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    logging:
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  test-db:
+    profiles: [tools]
+    image: postgres:17-alpine@sha256:3540c0362c809df084ffac0ae69fe794515f9de92692f02178bcdce0ef0302ac
+    environment:
+      POSTGRES_DB: clueso_test
+      POSTGRES_USER: clueso
+      POSTGRES_PASSWORD_FILE: /run/secrets/database_password
+    secrets:
+      - database_password
+    volumes:
+      - test_postgres_data:/var/lib/postgresql/data
+    tmpfs:
+      - /var/run/postgresql:size=16m
+      - /tmp:size=16m
+    read_only: true
+    command: ["postgres", "-c", "shared_buffers=32MB", "-c", "max_connections=20"]
+    networks: [test]
+    cpus: 0.35
+    mem_limit: 192m
+    pids_limit: 128
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 15s
+    logging:
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  node-tool:
+    profiles: [tools]
+    image: node:22-bookworm-slim@sha256:5ec23b7c622b00547753bc6ffd78085dd868a68aeb41c8e0a1418f033e13d96d
+    working_dir: /workspace
+    volumes:
+      - ../..:/workspace
+      - type: volume
+        source: node_modules
+        target: /workspace/node_modules
+        volume:
+          nocopy: true
+    environment:
+      NPM_CONFIG_CACHE: /workspace/.local/npm-cache
+      NPM_CONFIG_AUDIT: "false"
+      NPM_CONFIG_FUND: "false"
+      NODE_OPTIONS: --max-old-space-size=512
+      RAYON_NUM_THREADS: "1"
+    networks: [tooling]
+    cpus: 1.0
+    mem_limit: 768m
+    pids_limit: 128
+    init: true
+    command: ["node", "--version"]
+
+  maven-tool:
+    profiles: [tools]
+    image: maven:3.9.11-eclipse-temurin-21@sha256:6fdc855a6ed81d288ca7ca37ac6ff5e9308b612485c0801d70b25a858c83d237
+    working_dir: /workspace/services/api
+    volumes:
+      - ../..:/workspace
+      - ../../.local/m2:/root/.m2
+    environment:
+      MAVEN_OPTS: -Xmx256m -XX:ActiveProcessorCount=2
+      DB_URL: jdbc:postgresql://test-db:5432/clueso_test?connectTimeout=3&socketTimeout=5
+      DB_USER: clueso
+    secrets:
+      - source: database_password
+        target: spring.datasource.password
+    networks: [tooling, test]
+    cpus: 1.0
+    mem_limit: 1024m
+    pids_limit: 256
+    init: true
+    command: ["mvn", "--version"]
+
+  e2e:
+    profiles: [tools]
+    image: mcr.microsoft.com/playwright:v1.65.0-noble@sha256:6e3fb709361521eb27161606e6da6d2674e5e89fa16516cb37d6fdd91372273d
+    working_dir: /workspace
+    volumes:
+      - ../..:/workspace
+      - node_modules:/workspace/node_modules
+    environment:
+      BASE_URL: http://web:8080
+      CI: "true"
+    networks: [runtime]
+    cpus: 1.0
+    mem_limit: 1024m
+    pids_limit: 256
+    shm_size: 256m
+    init: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    command: ["npm", "run", "test:e2e"]
+
+secrets:
+  database_password:
+    file: ../../.local/secrets/spring.datasource.password
+
+volumes:
+  postgres_data:
+  test_postgres_data:
+  node_modules:
+
+networks:
+  runtime:
+    internal: true
+    ipam:
+      config:
+        - subnet: 198.18.109.0/28
+  test:
+    internal: true
+  tooling:
+  edge:
+    ipam:
+      config:
+        - subnet: 198.18.109.48/28
