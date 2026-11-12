@@ -1,5 +1,56 @@
 # Current status
 
+## Latest update: editorial / motion-led redesign
+
+- The user wanted an Awwwards-style creative direction, not a polished admin
+  dashboard. The previous sidebar/card-grid design has been replaced.
+- New composition: poster-scale type, warm-paper/ink/lime palette, original
+  ribbed SVG loop, pointer-responsive depth, moving type strip, high-contrast
+  storytelling sections, interactive specimen preview, and a quieter live lab.
+- Motion is explicitly pausable and automatically disabled for system reduced
+  motion. No WebGL, animation framework, remote artwork, or cloud service added.
+- Anton and variable Manrope are pinned at 5.3.0, from OFL-1.1 packages. Fonts
+  load locally; Vite emits small assets as files to preserve the original CSP.
+- Passed: Prettier, ESLint, TypeScript, production build, **15 frontend tests**,
+  and **9 real Chromium tests**.
+- Final browser run: `2026-11-12T00:44:00.949Z`, duration 81870.068 ms; 9 passed,
+  0 skipped, 0 unexpected, 0 flaky, with no automatic retries.
+- Eight essential-text targets: minimum contrast **5.15:1**. This remains a
+  focused measurement, not a claim of full accessibility conformance.
+- Desktop cover, full-page composition, and mobile screenshots were inspected.
+  Layout tests cover 320, 520, 760, 768, 1024, and 1440px widths.
+- The backend, API client/contracts, Compose infrastructure, CSP, and orchestration
+  scripts are unchanged. Only the web service was recreated; all three Clueso
+  runtime services remain healthy on the assigned ports.
+- Two new source components: the motion artwork and the extracted live lab.
+  Current source/documentation inventory: 60 files.
+- No Git writes, other-project changes, recording/publishing implementation,
+  or Phase 2 work. This is original art direction, not a claimed design award.
+
+## Previous update: tutorial-studio UI
+
+- Replaced the sparse dashboard with a responsive studio layout, vivid showcase,
+  original CSS/SVG artwork, richer status feedback, and an interactive synthetic
+  Capture/Detect/Review storyboard.
+- Added keyboard tab navigation, mobile menu/Escape handling, expandable JSON
+  output, a clear-result action, reduced-motion support, and readable text.
+- UI validation passed: Prettier, ESLint, TypeScript, production build,
+  **14 frontend tests and 7 real Chromium tests**.
+- Final browser run started `2026-11-11T19:44:55.938Z`: 7 passed, 0 skipped,
+  0 unexpected, 0 flaky in that run; observed duration 117529.147 ms.
+- Eight essential text targets measured at least **5.23:1** contrast against
+  their solid backgrounds. This is a focused check, not an accessibility audit.
+- Layout checks passed at 320, 520, 760, 768, 1024, and 1440px widths.
+- Backend, API contract, infrastructure, dependency manifests and lockfile
+  remain unchanged. Only the web runtime container was recreated.
+- Git metadata was observed during handoff, created outside this UI task.
+  Read-only status contains exactly the expected 11 modified and 2 new files;
+  no conflicting edits were found. No Git writes were performed.
+- Live UI: <http://localhost:18109>. All three Clueso runtime services are healthy.
+- No recording/diff/publishing feature was implemented; Phase 2 remains unstarted.
+
+## Initial Phase 0/1 baseline
+
 - Scope: Clueso only; Phase 0 and Phase 1.
 - Initial state: engineering PDF only, no Git repository or application files.
 - Guide: all 3 pages read completely before implementation.
@@ -10,7 +61,7 @@
   observed 22 CPUs and 16,467,517,440 bytes daemon memory.
 - Initial isolation: no `clueso` containers, no listeners on 18109/18209.
 - Toolchain: container Node v22.23.4 verified; Maven/Java image available.
-- Final full verification: `.\scripts\clueso.ps1 -Action Verify`, exit 0,
+- Initial full verification: `.\scripts\clueso.ps1 -Action Verify`, exit 0,
   `2026-11-11T17:35:55.8655805Z` to `2026-11-11T17:40:25.4526581Z`.
 - Passed: Prettier, ESLint, TypeScript, Vite production build, Spotless,
   Java compilation/package, **18 Java tests**, **12 frontend tests**, and
@@ -33,8 +84,11 @@
 ## Blockers and explicit limitations
 
 - No remaining blocker for the verified Phase 1 local skeleton.
-- Git initialization still needs separate approval; remote CI is authored but
-  was not executed.
+- One intermediate UI browser run hit two fixture-teardown timeouts. Both cases
+  passed unchanged in a focused rerun, then all seven passed together without
+  relaxed timeouts or disabled tracing. See the retained verification history.
+- Existing Git metadata is left untouched; Git writes/publishing still need
+  separate approval. Remote CI is authored but was not executed.
 - Fresh Git clone, clean-volume reset, cloud deployment, vulnerability audit,
   and production suitability were not claimed or tested.
 - Recording, domain permissions, diffing, selective re-recording, publishing,

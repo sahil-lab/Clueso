@@ -11,9 +11,20 @@ The verified skeleton is a React/TypeScript dashboard, a Java 21/Spring Boot 3 A
 and PostgreSQL, isolated with Docker Compose project `clueso`.
 
 **Verified locally:** formatting, lint, type checks, production builds,
-18 Java tests, 12 frontend tests, 4 real Chromium E2E tests, actual localhost
+18 Java baseline tests, 15 frontend tests, 9 real Chromium E2E tests, actual localhost
 publication, and database outage/recovery with migration persistence.
-Git initialization and remote CI remain unapproved/unexecuted.
+Git publishing and remote CI were not performed.
+
+**Stories in motion:** an editorial, motion-led interface with poster-scale Anton
+type, variable Manrope text, warm-paper/ink/lime art direction, an original ribbed
+SVG sculpture, pointer-responsive depth, a pausable moving type strip, and
+scroll-led storytelling. The dashboard sidebar/card-grid concept has been removed.
+Capture/Detect/Review remains keyboard-operable; the quieter live lab retains
+clear diagnostic states, JSON inspection, and reset controls.
+The preview is synthetic and never records, compares, publishes, or calls an API.
+The backend, API client/contracts, infrastructure, and CSP remain unchanged.
+Two pinned OFL-1.1 font packages were added; fonts are served as local files,
+never external requests or policy-blocked inline data URLs.
 
 **Not implemented:** recording, screenshots, narration, tutorial entities,
 dependency graphs, change detection, re-recording, publishing, authentication,
@@ -78,17 +89,25 @@ The only diagnostic POST is read-only: it validates a synthetic label and reads
 the migrated platform metadata. No arbitrary URL, file, credential, or tutorial
 content is accepted. Recording and publishing remain unavailable.
 
-Git initialization has not been authorized for this project. The monorepo is
-scaffolded on disk without creating a Git repository, commits, branches, or
-remotes. CI configuration is local source until separately authorized.
+Git metadata now exists, created outside this UI task. This session did not
+initialize it, alter its index, create commits, configure remotes, or push.
+Read-only status showed only the expected UI edits. CI configuration is local
+source until separately authorized.
 
 ## Short local demo
 
-1. Open <http://localhost:18109>. API/database cards start as **Not checked**.
-2. Submit the default synthetic label. The dashboard reports **Round trip
+1. Open <http://localhost:18109>. Move the pointer over the sculpture, or use
+   **Motion on/off** to pause/resume the decorative animation. System reduced
+   motion is respected automatically.
+2. Explore the synthetic workflow with the Capture, Detect, and Review tabs.
+   Arrow keys, Home, and End also work; these do not execute backend work.
+3. Use **Enter the lab**, then submit the default synthetic label under **Real
+   check. No magic.** The interface reports **Round trip
    complete**, `clueso-api`, and database schema version 1.
-3. Enter spaces only: the UI reports a validation error rather than claiming
+4. Expand **View response JSON**, or **Clear result** to reset the visible check.
+5. Enter spaces only: the UI reports a validation error rather than claiming
    success. Use a valid synthetic label to retry.
+6. On mobile, use the navigation menu. Escape closes it and returns keyboard focus.
 
 The POST is read-only; no label is stored. Recording and publishing are not
 available. The next phase is core domain data and permissioned APIs, not an

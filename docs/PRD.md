@@ -80,6 +80,35 @@ are not exposed. The static web server has `/healthz`.
 - Performance or benchmark claims, production readiness, production security,
   remote CI execution, Git actions.
 
+## Phase 1 UI refinement
+
+### Revised art direction after user feedback
+
+The dashboard-style refinement was not the requested creative direction. Replace
+its sidebar, pastel card grid, and conventional SaaS hierarchy with an original
+editorial, motion-led microsite: poster-scale self-hosted typography, warm paper /
+near-black / lime palette, an original dimensional centerpiece, and a scroll-led
+synthetic workflow. Reference the craft of award-site design without copying a
+specific site's assets or claiming any award.
+
+Preserve the real diagnostic in a quieter local-lab section. Decorative motion
+must be pausable, respect the system reduced-motion preference, and not block
+content or keyboard interaction. All font/graphic assets must be local; use only
+licensed font packages, no external trackers, image services, or new domain APIs.
+Validate the loaded fonts, motion controls, desktop/mobile composition, text
+contrast, and the unchanged real API/database workflow.
+
+The requested visual enhancement stays within the existing local skeleton.
+Improve typography, contrast, spacing, responsive navigation, and diagnostic
+feedback. An interactive synthetic storyboard may illustrate the future
+capture/detect/review workflow, but must be labelled as a concept and must not
+record, compare, publish, or issue new API calls.
+
+Acceptance: preserve the existing real diagnostic happy/failure paths; support
+keyboard selection of preview steps and mobile navigation; provide readable
+empty/loading/error/success states; verify desktop and mobile browser behavior
+without horizontal overflow, external assets, or new runtime dependencies.
+
 ## Later product acceptance targets (not verified here)
 
 - A one-step UI change flags only impacted tutorials.

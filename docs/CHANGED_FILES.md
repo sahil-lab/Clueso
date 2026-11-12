@@ -1,8 +1,19 @@
 # Source file inventory
 
 All paths are within Clueso. The initial directory contained only the engineering
-PDF, which remains unchanged. These are **56 source/documentation additions**,
-not a Git diff: Git initialization was not authorized.
+PDF, which remains unchanged. These are **60 source/documentation additions**,
+relative to the initial PDF-only directory, not a commit comparison. Git metadata
+was created outside this UI task and has not been changed by this session.
+
+The latest editorial refinement adds motion-artwork and live-lab components,
+replaces the dashboard composition, and updates the synthetic preview, page
+metadata, frontend/E2E tests, and related documentation. The web package manifest
+and npm lockfile intentionally add two pinned OFL font packages. Vite's asset
+inlining is disabled to keep font URLs compatible with the existing CSP.
+
+Backend, infrastructure, API client/contracts, and local orchestration scripts
+are unchanged. Current source hashes and changes relative to the previous UI
+handoff are recorded in the editorial verification evidence.
 
 ## Root and conventions
 
@@ -42,6 +53,10 @@ not a Git diff: Git initialization was not authorized.
 - [apps/web/Dockerfile.dockerignore](../apps/web/Dockerfile.dockerignore)
 - [apps/web/src/main.tsx](../apps/web/src/main.tsx)
 - [apps/web/src/App.tsx](../apps/web/src/App.tsx)
+- [apps/web/src/Icon.tsx](../apps/web/src/Icon.tsx)
+- [apps/web/src/MotionArtwork.tsx](../apps/web/src/MotionArtwork.tsx)
+- [apps/web/src/LiveLab.tsx](../apps/web/src/LiveLab.tsx)
+- [apps/web/src/WorkflowPreview.tsx](../apps/web/src/WorkflowPreview.tsx)
 - [apps/web/src/api.ts](../apps/web/src/api.ts)
 - [apps/web/src/styles.css](../apps/web/src/styles.css)
 - [apps/web/src/App.test.tsx](../apps/web/src/App.test.tsx)

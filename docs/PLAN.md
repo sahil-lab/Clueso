@@ -39,6 +39,33 @@ Verified by the complete local command on 2026-11-11, exit 0:
 outage, liveness/readiness separation, recovery, persistence, and trace logging
 also passed. See [VERIFICATION.md](VERIFICATION.md); remote CI remains unexecuted.
 
+### Phase 1 UI refinement - verified
+
+- [x] Replace the sparse dashboard with a polished, responsive tutorial studio.
+- [x] Add original illustrations and a clearly labelled synthetic workflow preview.
+- [x] Preserve the read-only diagnostic contract and all failure/retry behavior.
+- [x] Verify keyboard preview navigation, mobile navigation, JSON disclosure/reset,
+      reduced-motion layout, and 320-1440px horizontal-overflow boundaries.
+- [x] Pass formatting/lint/types/build, 14 frontend tests, and 7 Chromium tests.
+- [x] Measure essential text contrast: eight targets, minimum 5.23:1.
+- [x] Recreate only the web container and confirm actual localhost access.
+
+This refines the authorized Phase 1 interface; it does not implement any later
+recording, comparison, publishing, or domain module.
+
+### Latest Phase 1 refinement: editorial direction - verified
+
+- [x] Replace the rejected dashboard concept with an original editorial microsite.
+- [x] Add self-hosted licensed typography and an original dimensional motion study.
+- [x] Verify pointer response, manual motion pause/resume, and live system
+      reduced-motion changes.
+- [x] Preserve the synthetic preview and real read-only diagnostic behavior.
+- [x] Keep the existing CSP; emit font assets as local files instead of data URLs.
+- [x] Pass formatting/lint/types/build, 15 frontend tests, and 9 Chromium tests.
+- [x] Inspect actual desktop/mobile composition and preserve exact evidence.
+
+This is still Phase 1. It does not add the future recording or comparison engine.
+
 ## Phase 2 - core data and APIs (not started)
 
 Define domain entities, API contracts, permissions, idempotency, state

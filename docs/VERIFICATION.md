@@ -1,5 +1,175 @@
 # Verification evidence
 
+## Latest: editorial / motion-led redesign
+
+The user clarified that the previous polished dashboard did not meet the desired
+creative direction. The replacement is an original editorial microsite:
+poster-scale type, paper/ink/lime palette, an original SVG motion sculpture,
+pointer-responsive depth, a pausable type strip, and scroll-led storytelling.
+No specific award-site assets or layouts were copied; no award is claimed.
+
+### Observed final results
+
+| Check                          | Result                                                                                                                    |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| Prettier / ESLint / TypeScript | Pass                                                                                                                      |
+| Frontend tests                 | 2 files, 15 passed                                                                                                        |
+| Production build               | 23 modules, CSS 44.61 kB / 10.42 kB gzip, JS 248.99 kB / 76.92 kB gzip                                                    |
+| Chromium suite                 | 9 passed, 0 skipped/unexpected/flaky; 1 worker; no automatic retries                                                      |
+| Browser run                    | Started `2026-11-12T00:44:00.949Z`, duration 81870.068 ms                                                                 |
+| Motion                         | Actual pointer tilt, manual pause/resume, and live reduced-motion preference changes pass                                 |
+| Font delivery                  | Anton and Manrope are actually loaded, local WOFF2 requests observed, no external asset request or console error          |
+| Real diagnostic                | Exact four-field API/database response, invalid-input handling, visible network failure/retry, JSON disclosure/reset pass |
+| Preview                        | Keyboard navigation works without sending mutation requests; all scenes are labelled synthetic                            |
+| Layout                         | No horizontal overflow at 320, 520, 760, 768, 1024, 1440px                                                                |
+| Contrast                       | Eight essential-text targets pass 4.5:1; minimum observed 5.1491:1                                                        |
+| Visual inspection              | Desktop cover, full-page editorial composition, and mobile capture inspected                                              |
+| Scope                          | API/backend, infrastructure, CSP, API client/contracts and orchestration scripts unchanged                                |
+
+Only the web runtime service was recreated. Existing runtime CPU/memory/PID
+limits and localhost ports remain unchanged. Java and database-outage results
+below are historical baseline results, not newly rerun for this frontend-only task.
+
+### Exact commands
+
+```powershell
+docker compose --project-name clueso --file .\infra\docker\compose.yaml run --rm --no-deps node-tool npm install --no-audit --no-fund
+docker compose --project-name clueso --file .\infra\docker\compose.yaml run --rm --no-deps node-tool sh -lc 'npm run format:check && npm run lint && npm run typecheck && npm test && npm run build'
+docker compose --project-name clueso --file .\infra\docker\compose.yaml build web
+docker compose --project-name clueso --file .\infra\docker\compose.yaml up --no-deps --detach --wait --wait-timeout 120 web
+docker compose --project-name clueso --file .\infra\docker\compose.yaml run --rm --no-deps e2e
+```
+
+The install followed the explicit web dependency-manifest change and added only
+`@fontsource/anton@5.3.0` and `@fontsource-variable/manrope@5.3.0`. Registry metadata
+declares both OFL-1.1. Host Node/Java and global settings were not changed.
+
+### Failures found and fixed
+
+1. The initial browser-font test used `Array.from(FontFaceSet)` without iterable
+   DOM types. It now uses typed `FontFaceSet.forEach`; test registration was also
+   corrected before the browser run. No unsafe cast or broader TS relaxation.
+2. The Manrope package does not ship the assumed Latin CSS entry. Inspecting the
+   installed package identified its real `index.css` entry, which is now used.
+3. The first real browser run passed eight tests but reported a CSP violation for
+   a small font Vite had inlined as a data URL. Setting `assetsInlineLimit: 0`
+   emits that 2.55 kB WOFF2 as a local file. The original CSP was **not** weakened.
+   The final complete nine-test run passes, including zero console errors.
+
+### Persistent editorial evidence
+
+- [editorial-checks.log](../.local/evidence/editorial-checks.log)
+- [editorial-font-install.log](../.local/evidence/editorial-font-install.log)
+- [editorial-checks-initial.log](../.local/evidence/editorial-checks-initial.log)
+- [editorial-font-entry-failure.log](../.local/evidence/editorial-font-entry-failure.log)
+- [editorial-web-build.log](../.local/evidence/editorial-web-build.log)
+- [editorial-e2e.log](../.local/evidence/editorial-e2e.log)
+- [initial browser CSP failure](../.local/evidence/editorial-e2e-font-csp.log)
+- [preserved final browser report](../.local/evidence/editorial-e2e-results.json)
+- [measured text contrast](../.local/evidence/editorial-contrast.json)
+- [desktop cover](../.local/evidence/browser/smoke-production-browser---proxy---API---migrated-PostgreSQL/cover.png)
+- [full desktop composition](../.local/evidence/browser/smoke-production-browser---proxy---API---migrated-PostgreSQL/desktop.png)
+- [mobile composition](../.local/evidence/browser/smoke-mobile-layout-suppor-1ecd3-without-horizontal-overflow/mobile.png)
+- [editorial handoff](../.local/evidence/editorial-summary.json)
+- [editorial source hashes](../.local/evidence/editorial-source-inventory.json)
+
+The figures above are observed test/build results, not product benchmarks or an
+objective design-quality score. Other browsers, full accessibility compliance,
+and the future tutorial engine remain unverified/unimplemented.
+
+## Previous: tutorial-studio UI refinement
+
+The UI-only refinement preserves the existing backend and safety boundaries.
+It introduces a vivid studio layout, original CSS/SVG artwork, a clearly labelled
+synthetic Capture/Detect/Review preview, mobile navigation, keyboard interaction,
+JSON disclosure/reset, and more readable diagnostic feedback.
+
+### Exact UI verification commands
+
+Run from `C:\Users\upadhsah\Desktop\project\Clueso`:
+
+```powershell
+docker compose --project-name clueso --file .\infra\docker\compose.yaml run --rm --no-deps node-tool sh -lc 'npm run format && npm run format:check && npm run lint && npm run typecheck && npm test && npm run build'
+docker compose --project-name clueso --file .\infra\docker\compose.yaml build web
+docker compose --project-name clueso --file .\infra\docker\compose.yaml up --no-deps --detach --wait --wait-timeout 120 web
+docker compose --project-name clueso --file .\infra\docker\compose.yaml run --rm --no-deps e2e
+```
+
+All completed successfully. No package installation or host-tool change was
+required. The API and database containers were not restarted for this UI task.
+
+| Check                        | Observed result                                                                               |
+| ---------------------------- | --------------------------------------------------------------------------------------------- |
+| Prettier, ESLint, TypeScript | Pass; application and test/tool types checked                                                 |
+| Frontend tests               | 2 files, 14 passed                                                                            |
+| Production build             | 19 modules; CSS 38.77 kB / 9.40 kB gzip, JS 247.76 kB / 75.79 kB gzip                         |
+| Real Chromium suite          | 7 passed, 0 skipped, 0 unexpected, 0 flaky in the final run; 1 worker, 0 automatic retries    |
+| Browser timestamp/duration   | Started `2026-11-11T19:44:55.938Z`; 117529.147 ms observed                                    |
+| Real diagnostic              | Same exact four-field database-backed response; validation and network-error retry still pass |
+| Preview safety               | Arrow/Home/End navigation changes only synthetic artwork/copy; no mutation request is sent    |
+| Mobile navigation            | Menu opens/closes, Escape restores focus, section navigation closes the menu                  |
+| Response controls            | JSON disclosure shows the real response; clear resets status without making a request         |
+| Responsive layout            | No horizontal overflow at widths 320, 520, 760, 768, 1024, 1440                               |
+| Essential text contrast      | All 8 selected real-DOM text targets >= 4.5:1; observed minimum 5.2285:1                      |
+| Runtime                      | Web health `200 ok`, API readiness `200 UP`; three healthy Clueso services                    |
+| Scope preservation           | Baseline hashes confirm unchanged backend, infrastructure, package manifests and lockfile     |
+
+Desktop and mobile screenshots were visually inspected. Snapshot capture now
+returns to the top before capture, avoiding misplaced sticky navigation in
+full-page images. All artwork is original local markup; no external image/font
+service, user data, or cloud integration is involved.
+
+The contrast check measures eight essential text targets on solid backgrounds,
+not all artwork/gradients or every accessibility requirement. It is **not** a
+claim of full WCAG conformance.
+
+### UI iteration and failure history
+
+- The initial redesigned UI passed 14 unit tests and six browser tests.
+- A visual check identified overly faint helper text. The semantic text palette
+  and typography were improved, and a measured contrast test was added.
+- One intermediate seven-test run had two failures during Playwright
+  **context/request teardown**, not failed UI/API assertions. The two cases
+  passed unchanged in a focused rerun, followed by the complete seven-test pass.
+  Timeouts, tracing, resource limits, and assertions were not weakened. The
+  intermittent teardown delay's underlying cause was not established.
+
+Focused retry command:
+
+```powershell
+docker compose --project-name clueso --file .\infra\docker\compose.yaml run --rm --no-deps e2e npm run test:e2e -- --grep 'production browser|real API rejects'
+```
+
+Observed: 2 passed in 38.5 seconds. The subsequent complete run is the final
+seven-test result above, not a combination of partial runs.
+
+UI evidence:
+
+- [ui-checks.log](../.local/evidence/ui-checks.log)
+- [ui-image-build.log](../.local/evidence/ui-image-build.log)
+- [ui-e2e.log](../.local/evidence/ui-e2e.log)
+- [ui-e2e-teardown-timeout.log](../.local/evidence/ui-e2e-teardown-timeout.log)
+- [ui-e2e-followup.log](../.local/evidence/ui-e2e-followup.log)
+- [ui-contrast.json](../.local/evidence/ui-contrast.json)
+- [latest browser report](../.local/evidence/e2e-results.json)
+- [latest desktop/mobile captures](../.local/evidence/browser/)
+- [UI handoff summary](../.local/evidence/ui-summary.json)
+- [updated source hashes](../.local/evidence/ui-source-inventory.json)
+
+The earlier sections below retain the original Phase 0/1 evidence. The latest
+browser report and captures now describe this UI refinement; Java and
+database-outage results below remain the earlier unchanged-backend baseline.
+No later phase was started.
+
+### Git metadata observation
+
+The final safety check found `.git` metadata that did not exist at the original
+Phase 0/1 handoff. It was created outside this UI task. Read-only
+`git --no-pager status --short --untracked-files=normal`, with
+`GIT_OPTIONAL_LOCKS=0`, showed exactly the expected 11 modified and 2 new UI/docs
+files. No conflicting source edits were present. The metadata and index were
+left untouched; this session made no commits or remote/push changes.
+
 ## Pre-implementation observations
 
 Date: 2026-11-11. All commands were scoped to Clueso or read-only Docker/toolchain
@@ -195,9 +365,10 @@ All evidence is under the ignored project-local
   paths and SHA-256 digests after final documentation formatting.
 
 See [CHANGED_FILES.md](CHANGED_FILES.md) for the human-readable source inventory.
-The original engineering PDF is unchanged. There is no Git repository, diff,
-commit, branch, or remote; "changed files" means additions relative to the initial
-PDF-only directory.
+The original engineering PDF is unchanged. At the original Phase 0/1 handoff,
+there was no Git repository; "changed files" meant additions relative to the
+initial PDF-only directory. Git metadata subsequently appeared outside this
+session's work; see the UI handoff observation above.
 
 ## Unverified / deferred
 
