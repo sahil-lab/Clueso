@@ -1,6 +1,183 @@
 # Verification evidence
 
-## Latest: editorial / motion-led redesign
+## Latest: immersive WebGL direction
+
+The editorial page was replaced by a scroll-choreographed experience around one
+WebGL2 particle field (see [PRD.md](PRD.md) and decisions D18-D25). Everything
+below was observed on 2026-11-12 against the final sources and the build that is
+currently served, bundle `index-CNkjLYPm.js`. No award-site asset or layout was
+copied and no award is claimed.
+
+### Observed final results
+
+| Check                          | Result                                                                                                                                         |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Prettier / ESLint / TypeScript | Pass                                                                                                                                           |
+| Frontend tests                 | 4 files, 23 passed                                                                                                                             |
+| Production build               | 31 modules, CSS 27.98 kB / 7.07 kB gzip, JS 287.56 kB / 90.34 kB gzip                                                                          |
+| Java                           | 18 passed (3 integration against real PostgreSQL, 15 controller), `BUILD SUCCESS`                                                              |
+| Chromium suite                 | 11 passed, 0 skipped/unexpected/flaky; 1 worker; no automatic retries                                                                          |
+| Browser run                    | Started `2026-11-12T14:44:48.752Z`, duration 88505.608 ms                                                                                      |
+| Field tier in the suite        | `running / software / glow off`: the lighter profile, which has no bloom                                                                       |
+| Live-stack assertions          | 30 passed, `14:46:37Z` to `14:48:09Z`, including the real database outage and recovery                                                         |
+| Served build                   | `index-CNkjLYPm.js` and `index-Ek2m4cSK.css`, identical to `apps/web/dist`                                                                     |
+| Response headers               | `Cache-Control: no-cache` on the shell; Content-Security-Policy unchanged; `nosniff`, `no-referrer`, `DENY` present                            |
+| Real diagnostic                | Four-field response through the proxy; invalid input rejected without echo; visible network failure and explicit retry; JSON disclosure; reset |
+| Workflow                       | Keyboard navigation without requests; scrolling the pinned section selects Capture, Detect, then Review                                        |
+| Motion                         | Pause, resume, and live system reduced-motion changes pass; smooth scrolling is active only while motion runs                                  |
+| Fonts                          | Local WOFF2 requests observed, no external request, no console error                                                                           |
+| Layout                         | No horizontal overflow at 320, 520, 760, 768, 901, 1024, 1440px                                                                                |
+| Contrast                       | Twelve targets pass 4.5:1 against their solid backgrounds; minimum observed 8.26:1                                                             |
+| GPU inspection                 | Every section rendered and reviewed on Intel Arc integrated graphics; see below                                                                |
+
+### How the pipeline was actually completed
+
+`.\scripts\clueso.ps1 -Action Verify` did **not** complete in a single
+invocation. The host entered Modern Standby during both attempts, and the
+remaining stages were then run individually. Nothing was skipped, but this is
+not the same as one uninterrupted run and is recorded as such.
+
+1. First attempt, against the build before the backing-store cap: every stage
+   passed up to the final recovery wait after the database outage. Windows
+   logged "entering Modern Standby" at `09:51:30Z`; the wait started at
+   `09:56:19Z`, a session transition was logged at `09:56:23Z`, and "exiting
+   Modern Standby" at `11:39:18Z`. The 180-second health wait had expired:
+   exit 1. The containers themselves had restarted correctly and were healthy.
+2. Second attempt, against the final sources, started `11:41:06Z`. Windows had
+   already logged "entering Modern Standby" at `11:40:13Z`. Dependency check,
+   `format:check`, lint, typecheck, 23 unit tests, the production build, 18 Java
+   tests, and both image builds passed. The runtime health wait started at
+   `11:44:39Z`; the host resumed at `14:42:13Z` and the command exited 1 at
+   `14:42:17Z` with "dependency api failed to start: timeout waiting for
+   dependencies". This time the interrupted `up` had recreated the web container
+   without starting it: **the site was down** until the next step.
+3. `14:44Z`: `up --detach --wait --wait-timeout 120 db api web` exited 0. Web
+   returned 200, readiness `UP`, and the real check returned its four fields.
+4. `14:44:45Z` to `14:46:17Z`: the browser suite, 11 passed.
+5. `14:46:37Z` to `14:48:09Z`: `.\scripts\clueso.ps1 -Action VerifyRuntime`,
+   exit 0, 30 assertions printed `PASS`: host health and contract, exactly three
+   containers, project labels, CPU/memory/PID limits, loopback-only ports,
+   non-root users, no PostgreSQL port, internal runtime network, Flyway V1
+   applied once, readiness 503 and liveness 200 and an explicit 503 problem
+   during a real database stop, unchanged metadata and checksum after restart,
+   recovered round trip, parseable structured logs with a trace ID, and no
+   secret or label in the logs. The `PASS` lines are console output; the
+   machine-written record is `runtime-results.json`, which the script writes
+   only after every assertion has passed.
+
+`verification-summary.json` still records the second attempt as failed, which is
+accurate for that invocation and was left untouched. No host power setting was
+changed. A rerun of the single command needs the machine to stay awake for
+roughly eight minutes.
+
+### GPU inspection: method, numbers, limits
+
+The automated suite has no GPU, so the 60,000-particle and bloom path was
+checked by hand in the VS Code integrated browser on this machine.
+
+- Renderer: Intel Arc Pro Graphics through ANGLE on Direct3D 11; the full
+  renderer string is in the handoff summary. Viewport 1024x768 CSS px at 1.5x;
+  canvas 1521x1152.
+- Final bundle: `data-renderer="hardware"`, `data-glow="on"`, 60,000 live
+  particles, and `gl.getError()` returned 0 after the intro and about 390
+  frames. `EXT_color_buffer_float` is present in this browser, so the glow uses
+  half-float targets.
+- Reviewed as screenshots with the final screen-blended bloom: the hero (again
+  on the final bundle) and Review. Reviewed with the earlier additive bloom:
+  the stale frame at the end of the headline reveal, Capture, and the lab before
+  and after a real `200 OK` check. Reviewed before any bloom: Detect and the
+  footer. The screen blend can only lower the additive result, but those
+  sections were not looked at again after the change.
+- Frame cost: 3.58 ms per frame before the bloom and 3.73 ms with it, on the
+  builds before and after the bloom was added, taken as the slope between
+  10-frame and 40-frame batches that each end in a synchronous `readPixels`.
+- The integrated browser tab was in the background (`visibilityState: hidden`),
+  where animation frames do not fire. Frames were therefore driven from the
+  inspection harness by replacing `requestAnimationFrame` in that page only; the
+  product code was not changed for this. Consequences: the numbers are GPU and
+  script cost per frame, not an observed on-screen frame rate; pointer-driven
+  tilt, the cursor, magnetic buttons, and smooth wheel scrolling were **not**
+  watched live on the GPU; and the host was running other projects' workloads at
+  the time, so the figures are indicative, not a benchmark.
+
+Findings from that review that were fixed and re-inspected: the default light
+scrollbar, the stale-frame form running under the HUD at 1024px, the console
+leaving half the lab empty at 1024px, and the check-mark stroke blowing out to
+white once the bloom was added.
+
+### Exact commands
+
+```powershell
+.\scripts\clueso.ps1 -Action Format
+.\scripts\clueso.ps1 -Action Verify
+docker compose --project-name clueso --file .\infra\docker\compose.yaml up --detach --wait --wait-timeout 120 db api web
+docker compose --project-name clueso --file .\infra\docker\compose.yaml run --rm --no-deps e2e
+.\scripts\clueso.ps1 -Action VerifyRuntime
+```
+
+During iteration the same checks were run directly:
+
+```powershell
+docker compose --project-name clueso --file .\infra\docker\compose.yaml run --rm --no-deps node-tool sh -lc 'npm run format && npm run lint && npm run typecheck && npm test && npm run build'
+docker compose --project-name clueso --file .\infra\docker\compose.yaml build web
+docker compose --project-name clueso --file .\infra\docker\compose.yaml up --no-deps --detach --wait --wait-timeout 120 web
+```
+
+Dependencies changed once, through the web manifest: `lenis@1.3.27` (MIT) and
+`@fontsource/instrument-serif@5.3.0` (OFL-1.1) added, `@fontsource/anton`
+removed; the lockfile was regenerated in the Node tool container and later
+restored with `npm ci`. Host Node/Java and global settings were not changed.
+
+### Failures found and fixed
+
+1. The vertex shader used `active` as a variable name, a reserved word in GLSL
+   ES 3.0; the program failed to compile and the page fell back to static
+   artwork. Renamed.
+2. ESLint's React purity rule rejected `performance.now()` in component scope.
+   Timing moved into effect and frame callbacks.
+3. After a redeploy the browser kept an old `index.html`. The shell is now
+   served `no-cache` (D24).
+4. `prettier .` took more than ten minutes walking ignored caches under
+   `.local`. The format scripts now name their directories; 38 files at the
+   time, seconds.
+5. With a software renderer the first version made five browser tests time out
+   on fill rate. The lighter profile (D21) fixed it without relaxing a test.
+6. On the GPU the bloom whitened the dense check-mark stroke. A screen blend and
+   a lower brightness for that form restored the particle texture (D22).
+7. At 1024px the stale-frame form ran under the HUD and the console left the lab
+   half empty. Fitted placement (D23) and a two-column lab down to 901px.
+8. One browser run on a saturated host (94% CPU, another project's browser
+   container at 104%) took 4.4 minutes and timed out twice: the mobile test in
+   context teardown and the particle tour after its last screenshot. The
+   unchanged suite then passed 11/11 in 1.6 minutes. The timeout is now 60
+   seconds as margin; retries remain off.
+9. Two `Verify` runs were cut by host standby, as described above. The second
+   left the web container created but not started; it was restored and
+   `VerifyRuntime` was added so the interrupted stage can be resumed (D25).
+
+### Persistent evidence
+
+- [final pipeline log](../.local/evidence/immersive-verify.log) and
+  [its exit record](../.local/evidence/immersive-verify-exit.txt)
+- [interrupted runtime start](../.local/evidence/runtime-up.log)
+- [every Docker command with exit codes](../.local/evidence/commands.jsonl)
+- [browser run](../.local/evidence/immersive-e2e.log) and
+  [its report](../.local/evidence/immersive-e2e-results.json)
+- [live-stack command output](../.local/evidence/immersive-verify-runtime.log),
+  [exit record](../.local/evidence/immersive-verify-runtime-exit.txt), and
+  [observed runtime state](../.local/evidence/runtime-results.json)
+- [measured text contrast](../.local/evidence/immersive-contrast.json)
+- [GPU-rendered hero](../.local/evidence/immersive-gpu/hero.png)
+- [software-tier tour and mobile captures](../.local/evidence/immersive-tour/)
+- [handoff summary](../.local/evidence/immersive-summary.json) and
+  [source hashes](../.local/evidence/immersive-source-inventory.json)
+
+These are observed test and build results, not product benchmarks or a
+design-quality score. Unverified: other browsers and engines, mobile and low-end
+GPUs, displays large enough to engage the backing-store cap, text contrast over
+the moving field, full accessibility conformance, and the future tutorial engine.
+
+## Previous: editorial / motion-led redesign (superseded)
 
 The user clarified that the previous polished dashboard did not meet the desired
 creative direction. The replacement is an original editorial microsite:
@@ -77,7 +254,7 @@ The figures above are observed test/build results, not product benchmarks or an
 objective design-quality score. Other browsers, full accessibility compliance,
 and the future tutorial engine remain unverified/unimplemented.
 
-## Previous: tutorial-studio UI refinement
+## Earlier: tutorial-studio UI refinement (superseded)
 
 The UI-only refinement preserves the existing backend and safety boundaries.
 It introduces a vivid studio layout, original CSS/SVG artwork, a clearly labelled

@@ -1,19 +1,22 @@
 # Source file inventory
 
 All paths are within Clueso. The initial directory contained only the engineering
-PDF, which remains unchanged. These are **60 source/documentation additions**,
+PDF, which remains unchanged. These are **68 source/documentation additions**,
 relative to the initial PDF-only directory, not a commit comparison. Git metadata
 was created outside this UI task and has not been changed by this session.
 
-The latest editorial refinement adds motion-artwork and live-lab components,
-replaces the dashboard composition, and updates the synthetic preview, page
-metadata, frontend/E2E tests, and related documentation. The web package manifest
-and npm lockfile intentionally add two pinned OFL font packages. Vite's asset
-inlining is disabled to keep font URLs compatible with the existing CSP.
+The immersive redesign removes the SVG motion artwork and adds the particle
+field (engine, shaders, shape samplers, placement helpers and their tests), a
+shared frame ticker with smooth scrolling, and the preloader/cursor/marquee
+effects. It rewrites the page composition, workflow preview, live lab,
+stylesheet, and browser tests. The web manifest and lockfile add `lenis` and
+`@fontsource/instrument-serif` and drop `@fontsource/anton`.
 
-Backend, infrastructure, API client/contracts, and local orchestration scripts
-are unchanged. Current source hashes and changes relative to the previous UI
-handoff are recorded in the editorial verification evidence.
+Outside the web app, four files changed: `nginx.conf` (no-cache HTML shell),
+the root `package.json` (format scripts name their directories),
+`playwright.config.ts` (60-second test timeout, still no retries), and
+`scripts/clueso.ps1` (a `VerifyRuntime` action). The backend, API
+client/contracts, Compose file, and CSP are unchanged.
 
 ## Root and conventions
 
@@ -54,7 +57,15 @@ handoff are recorded in the editorial verification evidence.
 - [apps/web/src/main.tsx](../apps/web/src/main.tsx)
 - [apps/web/src/App.tsx](../apps/web/src/App.tsx)
 - [apps/web/src/Icon.tsx](../apps/web/src/Icon.tsx)
-- [apps/web/src/MotionArtwork.tsx](../apps/web/src/MotionArtwork.tsx)
+- [apps/web/src/ParticleField.tsx](../apps/web/src/ParticleField.tsx) - canvas host, HUD, static fallback
+- [apps/web/src/effects.tsx](../apps/web/src/effects.tsx) - preloader, cursor, grain, marquee, magnetic hook
+- [apps/web/src/motion.ts](../apps/web/src/motion.ts) - shared frame ticker and smooth scrolling
+- [apps/web/src/field/engine.ts](../apps/web/src/field/engine.ts) - WebGL2 field, glow passes, adaptive quality
+- [apps/web/src/field/shaders.ts](../apps/web/src/field/shaders.ts)
+- [apps/web/src/field/shapes.ts](../apps/web/src/field/shapes.ts) - deterministic samplers for the six forms
+- [apps/web/src/field/layout.ts](../apps/web/src/field/layout.ts) - placement fitting and backing-store cap
+- [apps/web/src/field/shapes.test.ts](../apps/web/src/field/shapes.test.ts)
+- [apps/web/src/field/layout.test.ts](../apps/web/src/field/layout.test.ts)
 - [apps/web/src/LiveLab.tsx](../apps/web/src/LiveLab.tsx)
 - [apps/web/src/WorkflowPreview.tsx](../apps/web/src/WorkflowPreview.tsx)
 - [apps/web/src/api.ts](../apps/web/src/api.ts)
@@ -93,6 +104,7 @@ handoff are recorded in the editorial verification evidence.
 ## Generated local state (not source)
 
 - `.local/evidence/`: command logs, results, screenshots and source digests.
+- `.local/backup/editorial-v2/`: the superseded editorial sources, kept locally.
 - `.local/secrets/`: generated database secret; never printed or checked in.
 - `.local/m2/`, `.local/npm-cache/`: generated dependency caches.
 - `apps/web/dist/`, `services/api/target/`: compiled output.

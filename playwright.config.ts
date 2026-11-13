@@ -3,7 +3,8 @@ import { defineConfig } from "@playwright/test";
 export default defineConfig({
   testDir: "./tests/e2e",
   outputDir: "./.local/evidence/browser",
-  timeout: 30_000,
+  // One CPU and a software rasterizer on a shared host: allow slow runs without retries.
+  timeout: 60_000,
   expect: { timeout: 10_000 },
   fullyParallel: false,
   workers: 1,

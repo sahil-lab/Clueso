@@ -1,7 +1,16 @@
-import { useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type MouseEvent,
+} from "react";
+import { Cursor, Grain, Marquee, Preloader, useMagnetic } from "./effects";
 import { Icon } from "./Icon";
 import LiveLab from "./LiveLab";
-import MotionArtwork from "./MotionArtwork";
+import { onFrame, scrollToY, setSmoothScroll } from "./motion";
+import ParticleField from "./ParticleField";
 import WorkflowPreview from "./WorkflowPreview";
 
 const navigation = [
@@ -10,14 +19,93 @@ const navigation = [
   { id: "diagnostic", label: "The live lab" },
 ];
 
+const chapters = ["overview", "idea", "preview", "diagnostic", "roadmap"];
+
+const statement =
+  "A button moves. A flow changes. And yesterday's perfect walkthrough quietly becomes today's wrong answer.".split(
+    " ",
+  );
+
+function Idea({ paused }: { paused: boolean }) {
+  const section = useRef<HTMLElement>(null);
+  const pin = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const element = section.current;
+    const target = pin.current;
+    if (!element || !target) return;
+    if (paused) {
+      target.style.setProperty("--p", "1");
+      return;
+    }
+    return onFrame(() => {
+      const rect = element.getBoundingClientRect();
+      const track = rect.height - window.innerHeight;
+      if (track <= 0) return;
+      const progress = Math.min(1, Math.max(0, -rect.top / track));
+      target.style.setProperty("--p", progress.toFixed(4));
+    });
+  }, [paused]);
+
+  return (
+    <section
+      id="idea"
+      className="idea"
+      ref={section}
+      aria-labelledby="idea-title"
+      data-form="1"
+      data-form-wide="0.8 0.47 0.2"
+      data-form-narrow="0.5 0.23 0.14"
+      tabIndex={-1}
+    >
+      <div className="idea-pin" ref={pin}>
+        <p className="label">01 &mdash; The problem with standing still</p>
+        <h2
+          id="idea-title"
+          className="statement"
+          style={{ "--n": statement.length } as CSSProperties}
+        >
+          {statement.map((word, index) => (
+            <span className="word" key={index} style={{ "--i": index } as CSSProperties}>
+              {word}{" "}
+            </span>
+          ))}
+        </h2>
+        <div className="idea-aside">
+          <p>
+            What if you only re-made <em>the moment that changed?</em>
+          </p>
+          <div
+            className="before-after"
+            aria-label="Synthetic example of a changed button label"
+          >
+            <span className="old-button">New project</span>
+            <Icon name="arrow" />
+            <span className="new-button">Create project</span>
+            <span className="example-note">One synthetic change</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [manualPause, setManualPause] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(
     () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
   );
+  const [intro] = useState(!reducedMotion);
+  const [ready, setReady] = useState(reducedMotion);
+  const [chapter, setChapter] = useState("overview");
+  const root = useRef<HTMLDivElement>(null);
+  const header = useRef<HTMLElement>(null);
   const menuButton = useRef<HTMLButtonElement>(null);
   const paused = manualPause || reducedMotion;
+  const reveal = useCallback(() => setReady(true), []);
+  const labLink = useMagnetic<HTMLAnchorElement>(paused);
+  const beginLink = useMagnetic<HTMLAnchorElement>(paused);
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -26,12 +114,92 @@ export default function App() {
     return () => media.removeEventListener("change", update);
   }, []);
 
+  useEffect(() => {
+    const enabled = !paused && window.matchMedia("(pointer: fine)").matches;
+    setSmoothScroll(enabled);
+    const stop = enabled ? onFrame(() => undefined) : undefined;
+    return () => {
+      stop?.();
+      setSmoothScroll(false);
+    };
+  }, [paused]);
+
+  useEffect(() => {
+    const targets = Array.from(
+      root.current?.querySelectorAll<HTMLElement>("[data-reveal]") ?? [],
+    );
+    if (typeof IntersectionObserver === "undefined") {
+      for (const target of targets) target.dataset.inview = "true";
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting || !(entry.target instanceof HTMLElement)) continue;
+          entry.target.dataset.inview = "true";
+          observer.unobserve(entry.target);
+        }
+      },
+      { rootMargin: "0px 0px -10% 0px", threshold: 0.1 },
+    );
+    for (const target of targets) observer.observe(target);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    let sample = window.scrollY;
+    let current = "overview";
+    return onFrame(({ scrollY }) => {
+      const element = header.current;
+      if (element && Math.abs(scrollY - sample) > 6) {
+        element.dataset.hidden = scrollY > sample && scrollY > 220 ? "true" : "false";
+        sample = scrollY;
+      }
+      let active = "overview";
+      for (const id of chapters) {
+        const top = document.getElementById(id)?.getBoundingClientRect().top;
+        if (top !== undefined && top <= window.innerHeight * 0.5) active = id;
+      }
+      if (active === current) return;
+      current = active;
+      setChapter(active);
+    });
+  }, []);
+
+  function navigate(event: MouseEvent<HTMLDivElement>) {
+    if (event.defaultPrevented || event.button !== 0) return;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const origin = event.target instanceof Element ? event.target : null;
+    const hash = origin?.closest('a[href^="#"]')?.getAttribute("href");
+    const target = hash ? document.getElementById(hash.slice(1)) : null;
+    if (!hash || !target) return;
+    event.preventDefault();
+    setMenuOpen(false);
+    history.pushState(null, "", hash);
+    const top =
+      hash === "#overview" ? 0 : target.getBoundingClientRect().top + window.scrollY;
+    scrollToY(top, paused);
+    target.focus({ preventScroll: true });
+  }
+
   return (
-    <div className="experience" data-motion={paused ? "paused" : "running"}>
+    <div
+      className="experience"
+      ref={root}
+      data-motion={paused ? "paused" : "running"}
+      data-ready={ready}
+      onClick={navigate}
+    >
       <a className="skip-link" href="#main">
         Skip to workspace
       </a>
+      {intro && <Preloader onReveal={reveal} />}
+      <ParticleField paused={paused} ready={ready} />
+      <Grain />
+      <Cursor paused={paused} />
+
       <header
+        ref={header}
         className={`site-header${menuOpen ? " menu-open" : ""}`}
         onKeyDown={(event) => {
           if (event.key === "Escape" && menuOpen) {
@@ -40,18 +208,9 @@ export default function App() {
           }
         }}
       >
-        <a
-          className="wordmark"
-          href="#overview"
-          aria-label="Clueso Lab overview"
-          onClick={() => setMenuOpen(false)}
-        >
-          clueso<span className="wordmark-star">*</span>
-          <span className="wordmark-lab">
-            INDEPENDENT
-            <br />
-            LAB
-          </span>
+        <a className="wordmark" href="#overview" aria-label="Clueso Lab overview">
+          clueso<i>*</i>
+          <span>Lab</span>
         </a>
         <nav id="site-navigation" aria-label="Workspace navigation">
           {navigation.map((item, index) => (
@@ -59,7 +218,7 @@ export default function App() {
               className="nav-link"
               key={item.id}
               href={`#${item.id}`}
-              onClick={() => setMenuOpen(false)}
+              aria-current={chapter === item.id ? "location" : undefined}
             >
               <span>0{index + 1}</span>
               {item.label}
@@ -81,16 +240,17 @@ export default function App() {
             disabled={reducedMotion}
             onClick={() => setManualPause(!manualPause)}
           >
-            <Icon name={paused ? "play" : "pause"} />
+            <i />
             <span>
               {reducedMotion ? "Motion reduced" : paused ? "Motion off" : "Motion on"}
             </span>
           </button>
-          <a className="header-lab" href="#diagnostic">
-            ENTER THE LAB <Icon name="arrow" />
+          <a className="header-lab magnetic" ref={labLink} href="#diagnostic">
+            Enter the lab <Icon name="arrow" />
           </a>
           <button
             className="menu-toggle"
+            type="button"
             aria-label={menuOpen ? "Close navigation" : "Open navigation"}
             aria-expanded={menuOpen}
             aria-controls="site-navigation"
@@ -102,160 +262,77 @@ export default function App() {
         </div>
       </header>
 
-      <main id="main">
-        <section id="overview" className="cover" aria-labelledby="cover-title">
-          <div className="cover-index">
+      <main id="main" tabIndex={-1}>
+        <section
+          id="overview"
+          className="hero"
+          aria-labelledby="hero-title"
+          data-form="0"
+          data-form-wide="0.7 0.46 0.36"
+          data-form-narrow="0.5 0.36 0.2"
+          tabIndex={-1}
+        >
+          <div className="hero-meta">
             <span>
-              <span className="tiny-square" /> AN EXPERIMENT IN CLARITY
+              <i className="live-dot" /> Independent prototype
             </span>
-            <span>PRODUCT STORIES, REIMAGINED &mdash; VOL. 01</span>
+            <span>Vol. 03 &mdash; Stories in motion</span>
           </div>
-          <div className="cover-composition">
-            <div className="cover-type">
-              <h1 id="cover-title" aria-label="Show it. Keep it moving.">
-                <span>SHOW IT.</span>
-                <span>KEEP IT</span>
-                <span className="outlined-word">
-                  MOVING<span className="solid-period">.</span>
-                </span>
-              </h1>
-              <div className="cover-description">
-                <span className="annotation-arrow" aria-hidden="true">
-                  <Icon name="arrow" />
-                </span>
-                <p>
-                  Your product never stands still.
-                  <br />
-                  Why should its tutorials?
-                </p>
-              </div>
-              <a className="explore-link" href="#preview">
-                <span>MEET THE LIVING TUTORIAL</span>
-                <span className="round-arrow">
-                  <Icon name="arrow" />
-                </span>
-              </a>
-            </div>
-            <MotionArtwork paused={paused} />
-          </div>
-          <div className="cover-bottom">
-            <span>
-              THE CONCEPT IS AMBITIOUS.
-              <br />
-              <strong>THE FOUNDATION IS REAL.</strong>
+          <h1 id="hero-title" aria-label="Show it. Keep it moving.">
+            <span className="line">
+              <span>Show it.</span>
             </span>
-            <p>
-              An independent exploration of tutorials that evolve with your product. A
-              synthetic preview, built on a working local stack.
-            </p>
-            <a href="#idea" aria-label="Scroll to the idea">
+            <span className="line">
+              <span>Keep it</span>
+            </span>
+            <span className="line">
               <span>
-                SCROLL TO
+                <em>moving.</em>
+              </span>
+            </span>
+          </h1>
+          <div className="hero-foot">
+            <p>
+              Your product never stands still.
+              <br />
+              Why should its tutorials?
+            </p>
+            <a className="begin-link magnetic" ref={beginLink} href="#idea">
+              <span>
+                Begin
                 <br />
-                GET THE IDEA
+                the story
               </span>
               <Icon name="arrow" />
             </a>
-          </div>
-        </section>
-
-        <div className="ticker" aria-hidden="true">
-          <div className="ticker-track">
-            {[0, 1].map((copy) => (
-              <div className="ticker-group" key={copy}>
-                <span>LESS RE-RECORDING</span>
-                <span className="ticker-star">*</span>
-                <span>MORE STORYTELLING</span>
-                <span className="ticker-star">*</span>
-                <span>ALWAYS A WORK IN MOTION</span>
-                <span className="ticker-star">*</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <section id="idea" className="idea-section" aria-labelledby="idea-title">
-          <div className="section-index">
-            <span>01 / THE PROBLEM WITH STANDING STILL</span>
-            <Icon name="plus" />
-          </div>
-          <div className="idea-layout">
-            <h2 id="idea-title">
-              YOUR UI
+            <span className="hero-hint">
+              Move your cursor.
               <br />
-              MOVED ON.
-              <br />
-              <span>
-                YOUR VIDEO
-                <br />
-                DIDN&apos;T.
-              </span>
-            </h2>
-            <div className="idea-copy">
-              <span className="idea-asterisk" aria-hidden="true">
-                *
-              </span>
-              <p>
-                A button moves. A flow changes.
-                <br />
-                Yesterday&apos;s perfect walkthrough
-                <br />
-                becomes today&apos;s outdated advice.
-              </p>
-              <p className="idea-description">
-                What if you could update just the part that changed? Keep the useful
-                story. Leave the endless retakes behind.
-              </p>
-              <div
-                className="before-after"
-                aria-label="Synthetic example of a changed button label"
-              >
-                <div>
-                  <span>THEN</span>
-                  <span className="old-button">New project</span>
-                </div>
-                <Icon name="arrow" />
-                <div>
-                  <span>NOW</span>
-                  <span className="new-button">
-                    <Icon name="plus" /> Create project
-                  </span>
-                </div>
-              </div>
-              <span className="example-note">
-                ONE SYNTHETIC CHANGE. A DIFFERENT WAY TO THINK.
-              </span>
-            </div>
-          </div>
-          <div className="idea-footnote">
-            <span>
-              CHANGE THE STEP.
-              <br />
-              NOT THE WHOLE STORY.
-            </span>
-            <span className="idea-footnote-arrow" aria-hidden="true">
-              <Icon name="arrow" />
+              The form is alive.
             </span>
           </div>
         </section>
 
-        <WorkflowPreview />
+        <Marquee paused={paused} />
+        <Idea paused={paused} />
+        <WorkflowPreview paused={paused} />
         <LiveLab />
 
         <section
           id="roadmap"
-          className="boundaries-section"
+          className="boundaries"
           aria-labelledby="boundaries-title"
+          tabIndex={-1}
         >
-          <div className="boundaries-heading">
-            <span className="section-kicker">A NOTE ON WHAT&apos;S REAL</span>
+          <div data-reveal>
+            <p className="label">04 &mdash; A note on what&apos;s real</p>
             <h2 id="boundaries-title">
-              BIG VISION.
+              Big vision.
               <br />
-              CLEAR BOUNDARIES.
+              <em>Clear boundaries.</em>
             </h2>
           </div>
-          <div className="boundaries-questions">
+          <div className="boundaries-questions" data-reveal>
             <details className="roadmap-current" open>
               <summary>
                 What can I actually try?
@@ -263,7 +340,7 @@ export default function App() {
               </summary>
               <p>
                 The live check connects this interface to a Java API and a migrated
-                PostgreSQL database. The interactive storyboard is a synthetic
+                PostgreSQL database. The scroll-driven storyboard is a synthetic
                 illustration, not a recording engine.
               </p>
             </details>
@@ -296,23 +373,29 @@ export default function App() {
       <footer className="site-footer">
         <div className="footer-top">
           <span>
-            KEEP YOUR PRODUCT MOVING.
+            Keep your product moving.
             <br />
-            TAKE THE STORY WITH IT.
+            Take the story with it.
           </span>
           <a href="#overview">
-            BACK TO THE TOP <Icon name="arrow" />
+            Back to the top <Icon name="arrow" />
           </a>
         </div>
-        <div className="footer-wordmark" aria-hidden="true">
-          clueso<span>*</span>
+        <div className="footer-wordmark" aria-hidden="true" data-reveal>
+          clueso<i>*</i>
         </div>
         <div className="footer-bottom">
-          <span>ORIGINAL CONCEPT / LOCAL PROTOTYPE</span>
-          <span>NOT AFFILIATED WITH CLUESO.</span>
-          <span>NO RECORDING. NO PUBLISHING.</span>
+          <span>Original concept / local prototype</span>
+          <span>Not affiliated with Clueso.</span>
+          <span>No recording. No publishing.</span>
         </div>
       </footer>
+
+      <div className="rail" aria-hidden="true">
+        {chapters.map((id) => (
+          <span key={id} className={chapter === id ? "is-current" : undefined} />
+        ))}
+      </div>
     </div>
   );
 }

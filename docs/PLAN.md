@@ -53,7 +53,7 @@ also passed. See [VERIFICATION.md](VERIFICATION.md); remote CI remains unexecute
 This refines the authorized Phase 1 interface; it does not implement any later
 recording, comparison, publishing, or domain module.
 
-### Latest Phase 1 refinement: editorial direction - verified
+### Phase 1 refinement: editorial direction - verified, then superseded
 
 - [x] Replace the rejected dashboard concept with an original editorial microsite.
 - [x] Add self-hosted licensed typography and an original dimensional motion study.
@@ -63,6 +63,27 @@ recording, comparison, publishing, or domain module.
 - [x] Keep the existing CSP; emit font assets as local files instead of data URLs.
 - [x] Pass formatting/lint/types/build, 15 frontend tests, and 9 Chromium tests.
 - [x] Inspect actual desktop/mobile composition and preserve exact evidence.
+
+### Latest Phase 1 refinement: immersive WebGL direction - verified
+
+- [x] Replace the static editorial layout with a scroll-choreographed experience
+      around one persistent WebGL2 particle field that morphs through six forms.
+- [x] Add preloader, smooth scrolling, custom cursor, magnetic buttons, velocity
+      marquee, scroll-linked word reveal, and a pinned three-stage workflow.
+- [x] Keep the real read-only diagnostic, its failure/retry paths, and every
+      synthetic-preview disclaimer; pulse the field on a real result.
+- [x] Degrade deliberately: lighter profile on software renderers, static SVG
+      without WebGL2, everything decorative off when motion is paused or reduced.
+- [x] Add a GPU-only three-level bloom, responsive form placement that clears
+      the HUD, a dark thin scrollbar, and a two-column lab down to 901px.
+- [x] Bound cost: adaptive particle reduction, glow dropped last, and a capped
+      backing store for very large displays.
+- [x] Keep the CSP unchanged; serve the HTML shell `no-cache`.
+- [x] Pass formatting/lint/types/build, 23 frontend tests, 18 Java tests, and
+      11 Chromium tests, plus the live-stack outage/recovery assertions.
+- [x] Inspect every section on a real GPU and record method, numbers, and limits.
+- [ ] Not done: other browsers, mobile/low-end GPU measurement, a 4K display,
+      and automated coverage of the GPU-only bloom path.
 
 This is still Phase 1. It does not add the future recording or comparison engine.
 

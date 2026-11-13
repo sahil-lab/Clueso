@@ -9,8 +9,8 @@
     "node": ">=22.22.2 <23"
   },
   "scripts": {
-    "format": "prettier . --write",
-    "format:check": "prettier . --check",
+    "format": "prettier --write .github .prettierrc.json apps docs infra packages tests \"*.{json,md,mjs,ts}\"",
+    "format:check": "prettier --check .github .prettierrc.json apps docs infra packages tests \"*.{json,md,mjs,ts}\"",
     "lint": "eslint .",
     "typecheck": "npm run typecheck --workspace apps/web && tsc --project tsconfig.tools.json",
     "test": "npm run test --workspace apps/web",

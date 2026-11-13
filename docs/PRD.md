@@ -82,7 +82,45 @@ are not exposed. The static web server has `/healthz`.
 
 ## Phase 1 UI refinement
 
-### Revised art direction after user feedback
+### Immersive direction after repeated feedback
+
+The editorial microsite was still read as a static page. The requirement is an
+experience in the register of award-listed creative sites, built on the same
+local skeleton and without copying any specific site or claiming any award.
+
+Requirements:
+
+- One persistent, real-time centerpiece that carries the story: a particle field
+  that changes form as the reader scrolls, responds to the pointer, and reacts to
+  the result of the real check.
+- Choreography rather than decoration: an entrance sequence, smooth scrolling, a
+  scroll-linked headline, and a pinned sequence for Capture, Detect, and Review.
+- The real diagnostic stays first-class: same request, same four-field response,
+  same validation, failure, retry, JSON disclosure, and reset behavior.
+- Every synthetic scene stays labelled as synthetic. Nothing records, compares,
+  publishes, or issues new API calls.
+- Motion is optional: a visible pause control, automatic respect for the system
+  reduced-motion preference, and no content that depends on motion to be read.
+- Graceful degradation: a lighter field on software renderers, static artwork
+  without WebGL2, and a working page in both cases.
+- Local only: self-hosted licensed fonts, no external requests, no tracker, and
+  the existing Content-Security-Policy unchanged.
+
+Acceptance:
+
+- The check round trip, invalid input, network failure, and retry pass in a real
+  browser against the running stack.
+- Keyboard users can operate the workflow tabs, the mobile menu, and the check.
+- Scrolling the pinned section selects Capture, then Detect, then Review.
+- No horizontal overflow at 320, 520, 760, 768, 901, 1024, and 1440px.
+- Twelve essential text targets meet 4.5:1 against their solid backgrounds.
+- Fonts load from local files with no external request and no console error.
+- The field reports its state, renderer class, glow state, and live particle
+  count, and falls back to static artwork when WebGL2 is unavailable.
+- On a hardware GPU, every form and the glow are inspected visually and the
+  frame cost is measured, with the method and its limits recorded.
+
+### Earlier art direction (superseded)
 
 The dashboard-style refinement was not the requested creative direction. Replace
 its sidebar, pastel card grid, and conventional SaaS hierarchy with an original

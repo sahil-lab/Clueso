@@ -1,6 +1,46 @@
 # Current status
 
-## Latest update: editorial / motion-led redesign
+## Latest update: immersive WebGL direction
+
+- The user asked three times for an Awwwards-calibre experience; the editorial
+  page was still a mostly static layout. It has been replaced by a dark,
+  scroll-choreographed experience built around one persistent WebGL2 particle
+  field (60,000 particles on GPUs) that morphs through six forms as the story
+  advances: living loop, stale frame, capture, detect, review, foundation.
+- Around it: a counting preloader with a curtain reveal, Lenis smooth scrolling,
+  a custom cursor, magnetic buttons, a velocity-coupled marquee, a scroll-linked
+  word reveal, a pinned three-stage workflow sequence, a glass console for the
+  real check, and a lime footer. GPUs additionally get a three-level bloom pass.
+- The real diagnostic is unchanged in behavior: browser -> proxy -> Java API ->
+  migrated PostgreSQL. A successful or failed check sends a pulse through the field.
+- Decorative motion can be paused, follows the system reduced-motion preference,
+  and never blocks content or keyboard use. Without WebGL2 a static SVG is shown.
+- Software rasterizers get a lighter profile (6,000 particles, half-resolution
+  backing store, alternate frames, no bloom) so the page itself stays responsive.
+- Dependencies: `lenis@1.3.27` (MIT) and `@fontsource/instrument-serif@5.3.0`
+  (OFL-1.1) added; `@fontsource/anton` removed. No three.js, no animation
+  framework, no remote asset, no cloud service. The CSP is not weakened.
+- Passed against the final sources: Prettier, ESLint, TypeScript, production
+  build, **23 frontend tests**, **18 Java tests**, **11 real Chromium tests**,
+  host publication, isolation assertions, and the real database outage/recovery.
+  These were completed in stages rather than by one uninterrupted `Verify`:
+  the host entered Modern Standby during two attempts. See VERIFICATION.md.
+- Hardware inspection (Intel Arc integrated graphics via ANGLE/D3D11, 1024x768
+  CSS px at 1.5x): the sections were rendered and reviewed on the GPU; the field
+  plus bloom costs about 3.7 ms per frame there. The tab was in the background,
+  so frames were driven by the inspection harness: live pointer and wheel
+  interaction was not watched on the GPU. The automated suite runs on a software
+  renderer and therefore does **not** exercise the bloom path.
+- Infrastructure change: the HTML shell is now served with a `no-cache` policy,
+  so a redeploy cannot be masked by a heuristically cached page.
+- Tooling change: `.\scripts\clueso.ps1 -Action VerifyRuntime` re-runs only the
+  live-stack assertions without rebuilding or recreating containers.
+- The second interrupted run left the web container created but not started;
+  it was restarted and the stack re-verified. All three services are healthy.
+- No Git writes, other-project changes, recording/publishing implementation, or
+  Phase 2 work. This is original art direction, not a claimed design award.
+
+## Previous update: editorial / motion-led redesign (superseded)
 
 - The user wanted an Awwwards-style creative direction, not a polished admin
   dashboard. The previous sidebar/card-grid design has been replaced.
@@ -27,7 +67,7 @@
 - No Git writes, other-project changes, recording/publishing implementation,
   or Phase 2 work. This is original art direction, not a claimed design award.
 
-## Previous update: tutorial-studio UI
+## Earlier update: tutorial-studio UI (superseded)
 
 - Replaced the sparse dashboard with a responsive studio layout, vivid showcase,
   original CSS/SVG artwork, richer status feedback, and an interactive synthetic
@@ -84,6 +124,14 @@
 ## Blockers and explicit limitations
 
 - No remaining blocker for the verified Phase 1 local skeleton.
+- The bloom and 60,000-particle path only runs on a hardware GPU. It was
+  inspected manually on one machine and one browser engine; it is not covered by
+  the automated suite, which uses a software renderer inside a container.
+- Text contrast is measured for twelve selectors against solid backgrounds.
+  Text that sits over the moving particle field is not measured automatically.
+- Other browsers, low-end or mobile GPUs, 4K displays, and full accessibility
+  conformance are unverified. The backing-store cap and adaptive particle
+  reduction are implemented and unit-tested where pure, not benchmarked.
 - One intermediate UI browser run hit two fixture-teardown timeouts. Both cases
   passed unchanged in a focused rerun, then all seven passed together without
   relaxed timeouts or disabled tracing. See the retained verification history.

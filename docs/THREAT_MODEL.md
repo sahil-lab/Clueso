@@ -34,6 +34,8 @@ audit or production approval.
 | Silent failure or fabricated success | Non-2xx failures are explicit; response structure is checked by the frontend; test failures stop verification; evidence records actual results.                                              |
 | Unsafe reset or unapproved delivery  | Flyway clean disabled; no volume deletion, Git initialization/commit/remote/push, cloud operation, or real-data access.                                                                      |
 | Dependency/supply-chain risk         | Published version/peer checks, npm lockfile, pinned build-image identities where available, container-only tooling; no claim of a full dependency audit.                                     |
+| Client GPU exhaustion or fingerprint | The particle field caps its backing store, reduces particles and then drops bloom on slow frames, and uses a light profile on software renderers. The renderer string is read locally only.  |
+| Stale interface after a redeploy     | The HTML shell is served `no-cache`; hashed assets cannot be mismatched with an old shell. Verified from the live response headers.                                                          |
 
 ## Required gates for later phases
 
@@ -55,3 +57,12 @@ production-grade secret manager. The skeleton must not be exposed to a LAN or th
 Internet. Container limits are not a claim of a hardened hostile-code sandbox.
 Remote CI, vulnerability scanning, production security, and all recording and
 publishing controls remain unverified until explicitly implemented and tested.
+
+The redesign adds one runtime dependency (`lenis`, MIT) and one font package
+(Instrument Serif, OFL-1.1), both pinned in the lockfile and served from the
+same origin. It adds no network destination, storage, cookie, or telemetry, and
+the Content-Security-Policy is unchanged. The WebGL renderer string is used only
+to choose a rendering tier in the browser; it is not sent, logged, or stored.
+Shader and GPU drivers are outside this project's control: the field falls back
+to static artwork if WebGL2 or a shader is unavailable, but driver defects on
+untested hardware remain possible.

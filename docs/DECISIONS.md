@@ -63,3 +63,96 @@ Changing IPAM on the already-created tooling/test networks triggered a Compose
 5.1.3 reconciliation failure referencing a container not connected to that
 network. Those unnecessary IPAM edits were reverted; existing networks and
 volumes were preserved. No global network cleanup was used.
+
+## D18 - one raw WebGL2 particle field instead of a 3D library
+
+The centerpiece is a single `POINTS` draw: six precomputed target positions per
+particle as vertex attributes, with morphing, flight, pointer push, pulse ring
+and depth blur computed in the vertex shader. That needs no scene graph, loader,
+or material system, so a 3D library would add bundle weight and a large
+dependency for one draw call. The engine is about 600 lines and owns its whole
+lifecycle: resize, context loss and restore, adaptive quality, and disposal.
+
+Consequence: the shaders and GL state are ours to maintain. Shape sampling and
+placement are pure functions with unit tests; the GL code is exercised only in a
+real browser.
+
+## D19 - Lenis for smooth scrolling, driven by one shared ticker
+
+Scroll position drives the field, the headline reveal, the pinned workflow and
+the marquee, so they must agree on one frame clock. `lenis@1.3.27` (MIT) is
+created with `autoRaf: false` and stepped by the same ticker as everything
+else. It is enabled only with a fine pointer and only while motion is running;
+touch devices, paused motion, and reduced motion use native scrolling. Its
+package does not export its stylesheet, so the two rules it needs are in our
+stylesheet.
+
+## D20 - Instrument Serif replaces Anton
+
+The display pairing is now variable Manrope with Instrument Serif italics, both
+self-hosted from OFL-1.1 Fontsource packages. `@fontsource/anton` was removed.
+Fonts remain local files because `assetsInlineLimit` stays at zero, which keeps
+the existing CSP free of `data:` sources.
+
+## D21 - software renderers get a lighter profile, not the same scene slower
+
+With a software rasterizer the full scene made the page itself unresponsive: in
+the one-CPU test container five browser tests timed out on fill rate alone. The
+engine reads the unmasked renderer string locally and, for SwiftShader/llvmpipe
+class renderers, uses 6,000 particles, a half-resolution backing store,
+alternate frames, smaller blur sprites, and no bloom. The HUD always shows the
+true live count. The renderer string never leaves the browser.
+
+Consequence: the automated browser suite runs this lighter profile, so it does
+not cover the GPU-only bloom path. That path is verified by manual inspection on
+a GPU and is guarded by a fallback: any failure to build or size the glow
+targets logs once and returns to direct rendering.
+
+## D22 - bloom as downsample-and-blur passes with a screen blend
+
+GPUs render the particles to an offscreen target, then a box downsample and
+three separable blur levels (quarter, eighth, sixteenth resolution) are added
+back over the scene. Half-float targets are used when `EXT_color_buffer_float`
+is available so the dim end of the glow does not band; otherwise 8-bit targets
+with dithering. The glow is combined with a screen blend rather than added,
+because plain addition blew the dense check-mark stroke out to white and erased
+its particle texture.
+
+Cost is bounded three ways: the backing store is capped at 3.4 megapixels and
+1.75x density, slow frames first reduce the particle count to a floor, and only
+then is the glow dropped.
+
+## D23 - form placement is fitted to the viewport
+
+Placements are authored as viewport fractions for a 16:10 window. On narrower
+desktop windows the stale-frame form ran under the fixed HUD and into the
+headline. Each stop is now scaled by aspect ratio (never below 0.72) and its
+centre is clamped so the form's known horizontal reach clears the HUD and the
+edges; a form wider than the available space is centred. The foundation terrain
+is intentionally wider than the screen and is exempt.
+
+## D24 - the HTML shell is never heuristically cached
+
+Nginx served `index.html` without a cache policy, so a browser could keep
+showing the previous design for minutes after a redeploy. The shell now has
+`expires -1` (`Cache-Control: no-cache`); hashed assets keep their own policy.
+This is the only infrastructure change in the redesign and does not touch the
+CSP or any other header.
+
+## D25 - verification can resume at the live-stack stage
+
+`clueso.ps1 -Action VerifyRuntime` runs only the live-stack assertions,
+including the real database outage and recovery, against the running stack. It
+exists because the host entered Modern Standby during two complete `Verify`
+runs: the health wait expired during the suspend, and the second time the
+interrupted `up` left the web container created but not started. Re-running the
+whole pipeline rebuilds images and recreates containers, which repeats that
+exposure; resuming at the stage that was interrupted does not. No host power
+setting was changed to work around this.
+
+Also in this round: the root format scripts name their directories instead of
+`.`, because Prettier walked the ignored `.local` caches before applying its
+ignore file and took more than ten minutes; and the Playwright test timeout is
+60 seconds, still with zero retries, because the six-stop particle tour takes
+about 21 seconds unloaded and exceeded 30 seconds when the shared host was at
+94% CPU.

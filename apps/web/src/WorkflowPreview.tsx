@@ -1,162 +1,113 @@
-import { useRef, useState, type KeyboardEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+} from "react";
 import { Icon } from "./Icon";
+import { onFrame, scrollToY } from "./motion";
 
 const stages = [
   {
     name: "Capture",
-    title: "START WITH\nTHE RIGHT STEP.",
+    title: "Start with the right step.",
     description:
       "The idea: capture meaningful actions, not fragile coordinates. A click with context. Recording will require explicit target authorization.",
-    caption: "LESS GUESSWORK. MORE MEANING.",
+    note: "Less guesswork. More meaning.",
   },
   {
     name: "Detect",
-    title: "FIND THE CHANGE.\nKEEP THE STORY.",
+    title: "Find the change. Keep the story.",
     description:
       "Connect a UI change to the exact step it affects. This is a synthetic illustration, not an executed diff. The comparison engine is future work.",
-    caption: "A SMALL CHANGE. NOT A BIG PRODUCTION.",
+    note: "A small change. Not a big production.",
   },
   {
     name: "Review",
-    title: "THE LAST WORD\nIS ALWAYS YOURS.",
+    title: "The last word is always yours.",
     description:
       "Preview the updated moment before making it public. No recording or publishing happens here. Future publishing must require human approval.",
-    caption: "HUMAN APPROVAL. NOT AN AFTERTHOUGHT.",
+    note: "Human approval. Not an afterthought.",
   },
 ];
 
-function StoryboardScene({ stage }: { stage: number }) {
+function Specimen({ stage }: { stage: number }) {
   return (
-    <div className={`storyboard-scene scene-${stage}`} aria-hidden="true">
-      <div className="scene-registration">
-        <span>CLUESO LAB / SPECIMEN 0{stage + 1}</span>
-        <Icon name="plus" />
-      </div>
+    <div className="specimen" aria-hidden="true">
       {stage === 0 && (
-        <div className="capture-scene">
-          <div className="sample-window">
-            <div className="sample-toolbar">
-              <strong>
-                atlas<span>*</span>
-              </strong>
-              <span>A PLACE FOR YOUR NEXT IDEA</span>
-              <span className="sample-avatar">A</span>
-            </div>
-            <div className="sample-content">
-              <span className="sample-eyebrow">WORKSPACE / PROJECTS</span>
-              <div className="sample-title-row">
-                <strong>
-                  Make room
-                  <br />
-                  for something good.
-                </strong>
-                <span className="sample-create">
-                  <Icon name="plus" /> New project
-                </span>
-              </div>
-              <div className="sample-projects">
-                <div className="sample-project">
-                  <div className="project-art art-grid">
-                    <i />
-                    <i />
-                    <i />
-                    <span>*</span>
-                  </div>
-                  <strong>New perspectives</strong>
-                  <span>A creative experiment</span>
-                </div>
-                <div className="sample-project">
-                  <div className="project-art art-circles">
-                    <i />
-                    <i />
-                    <i />
-                  </div>
-                  <strong>Good things ahead</strong>
-                  <span>A little work in progress</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="capture-pointer">
-            <Icon name="cursor" />
-            <span>01 / CLICK &ldquo;NEW PROJECT&rdquo;</span>
-          </div>
-          <span className="sample-record">
-            <span className="dot" /> SEMANTIC STEP / SAMPLE
+        <>
+          <span className="chip chip-a">
+            <i className="chip-dot" /> Semantic step / sample
           </span>
-        </div>
+          <span className="chip chip-b">
+            <Icon name="cursor" /> Click &ldquo;New project&rdquo;
+          </span>
+        </>
       )}
       {stage === 1 && (
-        <div className="detect-scene">
-          <span className="diff-kicker">SAME INTENT. NEW INTERFACE.</span>
-          <div className="diff-line diff-before">
-            <span>BEFORE</span>
-            <del>New project</del>
-            <span>&minus;</span>
-          </div>
-          <div className="diff-line diff-after">
-            <span>AFTER</span>
-            <strong>Create project</strong>
-            <Icon name="plus" />
-          </div>
-          <div className="impact-path">
-            <span>UI CHANGE</span>
-            <span className="impact-line" />
-            <span className="impact-node">STEP 01</span>
-            <span className="impact-line" />
-            <span>SAME TUTORIAL</span>
-          </div>
-          <span className="diff-note">
-            <Icon name="branch" /> CHANGE THE MOMENT, NOT EVERYTHING.
-          </span>
-        </div>
+        <>
+          <span className="chip chip-a chip-removed">&minus; New project</span>
+          <span className="chip chip-b chip-added">+ Create project</span>
+        </>
       )}
       {stage === 2 && (
-        <div className="review-scene">
-          <div className="review-frame">
-            <span className="review-frame-label">UPDATED SEGMENT / CONCEPT</span>
-            <strong>
-              STILL YOUR
-              <br />
-              STORY.
-            </strong>
-            <span className="review-play">
-              <Icon name="play" />
-            </span>
-            <div className="review-progress">
-              <span />
-            </div>
-          </div>
-          <div className="review-approval">
-            <Icon name="shield" />
-            <div>
-              <strong>A human decision.</strong>
-              <span>Preview first. Publish only with approval.</span>
-            </div>
-            <Icon name="lock" />
-          </div>
-          <span className="review-stamp">
-            NOTHING
-            <br />
-            GOES LIVE
-            <br />
-            <strong>WITHOUT YOU.</strong>
+        <>
+          <span className="chip chip-a">
+            <Icon name="eye" /> Updated segment / concept
           </span>
-        </div>
+          <span className="chip chip-b chip-added">
+            <Icon name="lock" /> Waiting for your approval
+          </span>
+        </>
       )}
-      <div className="scene-registration scene-registration-bottom">
-        <span>ILLUSTRATION ONLY</span>
-        <span>0{stage + 1} &mdash; 03</span>
-      </div>
     </div>
   );
 }
 
-export default function WorkflowPreview() {
+export default function WorkflowPreview({ paused }: { paused: boolean }) {
   const [activeStage, setActiveStage] = useState(0);
+  const section = useRef<HTMLElement>(null);
+  const progressBar = useRef<HTMLSpanElement>(null);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const derived = useRef(0);
+  const pending = useRef<{ stage: number; frames: number } | null>(null);
   const stage = stages[activeStage];
   if (!stage) throw new Error("Invalid workflow preview step.");
+
+  useEffect(() => {
+    const element = section.current;
+    if (!element) return;
+    return onFrame(() => {
+      const rect = element.getBoundingClientRect();
+      const track = rect.height - window.innerHeight;
+      if (track <= 0) return;
+      const progress = Math.min(1, Math.max(0, -rect.top / track));
+      progressBar.current?.style.setProperty("--progress", progress.toFixed(4));
+      const next = Math.min(stages.length - 1, Math.floor(progress * stages.length));
+      const wait = pending.current;
+      if (wait) {
+        wait.frames -= 1;
+        if (next !== wait.stage && wait.frames > 0) return;
+        pending.current = null;
+      }
+      if (next === derived.current) return;
+      derived.current = next;
+      setActiveStage(next);
+    });
+  }, []);
+
+  function select(next: number, focus: boolean) {
+    setActiveStage(next);
+    const element = section.current;
+    const track = element ? element.offsetHeight - window.innerHeight : 0;
+    if (element && track > 0) {
+      pending.current = { stage: next, frames: 150 };
+      const start = element.getBoundingClientRect().top + window.scrollY;
+      scrollToY(start + ((next + 0.5) / stages.length) * track, paused);
+    }
+    if (focus) tabRefs.current[next]?.focus({ preventScroll: true });
+  }
 
   function navigateTabs(event: KeyboardEvent<HTMLButtonElement>, index: number) {
     let next: number;
@@ -177,78 +128,86 @@ export default function WorkflowPreview() {
         return;
     }
     event.preventDefault();
-    setActiveStage(next);
-    tabRefs.current[next]?.focus();
+    select(next, true);
   }
 
   return (
-    <section id="preview" className="workflow-section" aria-labelledby="preview-title">
-      <div className="section-index">
-        <span>02 / A DIFFERENT KIND OF WORKFLOW</span>
-        <span>INTERACTIVE CONCEPT</span>
-      </div>
-      <div className="workflow-heading">
-        <h2 id="preview-title">
-          SAME STORY.
-          <br />
-          <span>NEW CHAPTER.</span>
-        </h2>
-        <p>
-          One idea. Three moments.
-          <br />
-          Step into the possibilities.
+    <section
+      id="preview"
+      className="workflow"
+      ref={section}
+      aria-labelledby="preview-title"
+      tabIndex={-1}
+    >
+      {stages.map((item, index) => (
+        <span
+          key={item.name}
+          className="form-marker"
+          data-form={index + 2}
+          data-form-wide="0.72 0.6 0.24"
+          data-form-narrow="0.5 0.36 0.15"
+          style={{ "--k": index } as CSSProperties}
+          aria-hidden="true"
+        />
+      ))}
+      <div className="workflow-stage">
+        <header className="workflow-head">
+          <p className="label">02 &mdash; A different kind of workflow</p>
+          <h2 id="preview-title">
+            Same story. <em>New chapter.</em>
+          </h2>
+        </header>
+        <div
+          className="workflow-tabs"
+          role="tablist"
+          aria-label="Tutorial workflow preview"
+        >
+          {stages.map((item, index) => (
+            <button
+              key={item.name}
+              id={`workflow-tab-${index}`}
+              role="tab"
+              aria-selected={activeStage === index}
+              aria-controls="workflow-panel"
+              tabIndex={activeStage === index ? 0 : -1}
+              ref={(element) => {
+                tabRefs.current[index] = element;
+              }}
+              onClick={() => select(index, false)}
+              onKeyDown={(event) => navigateTabs(event, index)}
+            >
+              <span className="tab-number">0{index + 1}</span>
+              {item.name}
+            </button>
+          ))}
+          <span className="workflow-progress" ref={progressBar} aria-hidden="true" />
+        </div>
+        <div
+          id="workflow-panel"
+          className="workflow-panel"
+          role="tabpanel"
+          aria-labelledby={`workflow-tab-${activeStage}`}
+          tabIndex={0}
+        >
+          <div className="preview-caption" key={activeStage}>
+            <span className="preview-step">
+              0{activeStage + 1}
+              <i>/ 03</i>
+            </span>
+            <h3>{stage.title}</h3>
+            <p>{stage.description}</p>
+            <span className="stage-note">
+              <Icon name="arrow" />
+              {stage.note}
+            </span>
+          </div>
+          <Specimen stage={activeStage} />
+        </div>
+        <p className="preview-disclaimer">
+          <Icon name="info" /> A synthetic preview, not a recording engine. No recording,
+          comparison, or publishing runs.
         </p>
       </div>
-      <div
-        className="workflow-tabs"
-        role="tablist"
-        aria-label="Tutorial workflow preview"
-      >
-        {stages.map((item, index) => (
-          <button
-            key={item.name}
-            id={`workflow-tab-${index}`}
-            role="tab"
-            aria-selected={activeStage === index}
-            aria-controls="workflow-panel"
-            tabIndex={activeStage === index ? 0 : -1}
-            ref={(element) => {
-              tabRefs.current[index] = element;
-            }}
-            onClick={() => setActiveStage(index)}
-            onKeyDown={(event) => navigateTabs(event, index)}
-          >
-            <span className="tab-number">0{index + 1}</span>
-            <span>{item.name}</span>
-            <Icon name="arrow" />
-          </button>
-        ))}
-      </div>
-      <div
-        id="workflow-panel"
-        className="workflow-panel"
-        role="tabpanel"
-        aria-labelledby={`workflow-tab-${activeStage}`}
-        tabIndex={0}
-      >
-        <div className="preview-caption" key={`caption-${activeStage}`}>
-          <span className="preview-step">
-            0{activeStage + 1}
-            <span>/ 03</span>
-          </span>
-          <h3>{stage.title}</h3>
-          <p>{stage.description}</p>
-          <span className="stage-caption">
-            <Icon name="arrow" />
-            {stage.caption}
-          </span>
-        </div>
-        <StoryboardScene stage={activeStage} />
-      </div>
-      <p className="preview-disclaimer">
-        <Icon name="info" /> A SYNTHETIC PREVIEW, NOT A RECORDING ENGINE. NO RECORDING,
-        COMPARISON, OR PUBLISHING RUNS.
-      </p>
     </section>
   );
 }

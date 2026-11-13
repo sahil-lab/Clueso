@@ -1,5 +1,5 @@
 param(
-    [ValidateSet("Setup", "Format", "Up", "Verify", "Status")]
+    [ValidateSet("Setup", "Format", "Up", "Verify", "VerifyRuntime", "Status")]
     [string]$Action = "Status"
 )
 
@@ -181,6 +181,12 @@ try {
                 remoteCi = "not executed"
                 nextPhase = "Phase 2 - not started"
             })
+        }
+        "VerifyRuntime" {
+            # Re-runs only the live-stack assertions (including the database outage and
+            # recovery) without rebuilding or recreating containers.
+            . (Join-Path $PSScriptRoot "verify-runtime.ps1")
+            Test-CluesoRuntime
         }
         "Status" {
             Invoke-Compose -ComposeArgs @("ps", "--all")
